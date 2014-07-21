@@ -8,6 +8,7 @@ import com.massivecraft.factions.integration.Econ;
 import com.massivecraft.factions.struct.Permission;
 import com.massivecraft.factions.struct.Relation;
 import com.massivecraft.factions.struct.Role;
+import org.bukkit.Location;
 
 import java.util.Collection;
 
@@ -68,6 +69,10 @@ public class CmdShow extends FCommand {
         if (faction.isPermanent()) {
             msg("<a>This faction is permanent, remaining even with no members.");
         }
+
+        Location home = faction.getHome();
+        String homeLoc = home == null ? "none" : home.getWorld() + " " + home.getBlockX() + " " + home.getBlockY() + " " + home.getBlockZ();
+        msg("<a>Faction Home: %s", homeLoc);
 
         // show the land value
         if (Econ.shouldBeUsed()) {
