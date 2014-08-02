@@ -31,6 +31,7 @@ public class CmdReload extends FCommand {
         if (file.startsWith("c")) {
             Conf.load();
             fileName = "conf.json";
+            P.p.reloadConfig();
         } else if (file.startsWith("b")) {
             Board.load();
             fileName = "board.json";
@@ -43,6 +44,7 @@ public class CmdReload extends FCommand {
         } else if (file.startsWith("a")) {
             fileName = "all";
             Conf.load();
+            P.p.reloadConfig();
             FPlayers.i.loadFromDisc();
             Factions.i.loadFromDisc();
             Board.load();

@@ -95,6 +95,8 @@ public abstract class MPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(this.mPluginSecretPlayerListener, this);
         getServer().getPluginManager().registerEvents(this.mPluginSecretServerListener, this);
 
+        saveDefaultConfig();
+
         // Register recurring tasks
         if (saveTask == null && Conf.saveToFileEveryXMinutes > 0.0) {
             long saveTicks = (long) (20 * 60 * Conf.saveToFileEveryXMinutes); // Approximately every 30 min by default

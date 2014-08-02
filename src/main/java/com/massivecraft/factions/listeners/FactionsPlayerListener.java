@@ -98,7 +98,7 @@ public class FactionsPlayerListener implements Listener {
             String ownersTo = myFaction.getOwnerListString(to);
 
             if (changedFaction) {
-                me.sendFactionHereMessage();
+                me.sendFactionHereMessage(); // now shows scoreboard
                 if (Conf.ownedAreasEnabled && Conf.ownedMessageOnBorder && myFaction == factionTo && !ownersTo.isEmpty()) {
                     me.sendMessage(Conf.ownedLandMessage + ownersTo);
                 }
