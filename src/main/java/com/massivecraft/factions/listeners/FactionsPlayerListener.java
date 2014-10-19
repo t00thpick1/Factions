@@ -32,7 +32,7 @@ public class FactionsPlayerListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerJoin(PlayerJoinEvent event) {
         // Make sure that all online players do have a fplayer.
-        final FPlayer me = FPlayers.i.get(event.getPlayer());
+        final FPlayer me = FPlayers.getInstance().getByPlayer(event.getPlayer());
 
         // Update the lastLoginTime for this fplayer
         me.setLastLoginTime(System.currentTimeMillis());
@@ -43,7 +43,7 @@ public class FactionsPlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerQuit(PlayerQuitEvent event) {
-        FPlayer me = FPlayers.i.get(event.getPlayer());
+        FPlayer me = FPlayers.getInstance().getByPlayer(event.getPlayer());
 
         // Make sure player's power is up to date when they log off.
         me.getPower();
@@ -68,7 +68,7 @@ public class FactionsPlayerListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        FPlayer me = FPlayers.i.get(player);
+        FPlayer me = FPlayers.getInstance().getByPlayer(player);
 
         // Did we change coord?
         FLocation from = me.getLastStoodAt();
@@ -83,8 +83,8 @@ public class FactionsPlayerListener implements Listener {
         me.setLastStoodAt(to);
 
         // Did we change "host"(faction)?
-        Faction factionFrom = Board.getFactionAt(from);
-        Faction factionTo = Board.getFactionAt(to);
+        Faction factionFrom = Board.getInstance().getFactionAt(from);
+        Faction factionTo = Board.getInstance().getFactionAt(to);
         boolean changedFaction = (factionFrom != factionTo);
 
         /* Was used for displaying on Spout but we removed Spout compatibility.
@@ -93,7 +93,7 @@ public class FactionsPlayerListener implements Listener {
             */
 
         if (me.isMapAutoUpdating()) {
-            me.sendMessage(Board.getMap(me.getFaction(), to, player.getLocation().getYaw()));
+            me.sendMessage(Board.getInstance().getMap(me.getFaction(), to, player.getLocation().getYaw()));
         } else {
             Faction myFaction = me.getFaction();
             String ownersTo = myFaction.getOwnerListString(to);
@@ -121,8 +121,8 @@ public class FactionsPlayerListener implements Listener {
             if (!Permission.MANAGE_SAFE_ZONE.has(player)) {
                 me.setIsAutoSafeClaimEnabled(false);
             } else {
-                if (!Board.getFactionAt(to).isSafeZone()) {
-                    Board.setFactionAt(Factions.i.getSafeZone(), to);
+                if (!Board.getInstance().getFactionAt(to).isSafeZone()) {
+                    Board.getInstance().setFactionAt(Factions.getInstance().getSafeZone(), to);
                     me.msg("<i>This land is now a safe zone.");
                 }
             }
@@ -130,8 +130,8 @@ public class FactionsPlayerListener implements Listener {
             if (!Permission.MANAGE_WAR_ZONE.has(player)) {
                 me.setIsAutoWarClaimEnabled(false);
             } else {
-                if (!Board.getFactionAt(to).isWarZone()) {
-                    Board.setFactionAt(Factions.i.getWarZone(), to);
+                if (!Board.getInstance().getFactionAt(to).isWarZone()) {
+                    Board.getInstance().setFactionAt(Factions.getInstance().getWarZone(), to);
                     me.msg("<i>This land is now a war zone.");
                 }
             }
@@ -166,7 +166,7 @@ public class FactionsPlayerListener implements Listener {
                 }
                 int count = attempt.increment();
                 if (count >= 10) {
-                    FPlayer me = FPlayers.i.get(name);
+                    FPlayer me = FPlayers.getInstance().getByPlayer(player);
                     me.msg("<b>Ouch, that is starting to hurt. You should give it a rest.");
                     player.damage(NumberConversions.floor((double) count / 10));
                 }
@@ -212,13 +212,13 @@ public class FactionsPlayerListener implements Listener {
             return true;
         }
 
-        FPlayer me = FPlayers.i.get(player);
+        FPlayer me = FPlayers.getInstance().getByPlayer(player);
         if (me.isAdminBypassing()) {
             return true;
         }
 
         FLocation loc = new FLocation(location);
-        Faction otherFaction = Board.getFactionAt(loc);
+        Faction otherFaction = Board.getInstance().getFactionAt(loc);
 
         if (otherFaction.hasPlayersOnline()) {
             if (!Conf.territoryDenyUseageMaterials.contains(material)) {
@@ -291,14 +291,14 @@ public class FactionsPlayerListener implements Listener {
             return true;
         }
 
-        FPlayer me = FPlayers.i.get(player);
+        FPlayer me = FPlayers.getInstance().getByPlayer(player);
         if (me.isAdminBypassing()) {
             return true;
         }
 
         Material material = block.getType();
         FLocation loc = new FLocation(block);
-        Faction otherFaction = Board.getFactionAt(loc);
+        Faction otherFaction = Board.getInstance().getFactionAt(loc);
 
         // no door/chest/whatever protection in wilderness, war zones, or safe zones
         if (!otherFaction.isNormal()) {
@@ -356,7 +356,7 @@ public class FactionsPlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
-        FPlayer me = FPlayers.i.get(event.getPlayer());
+        FPlayer me = FPlayers.getInstance().getByPlayer(event.getPlayer());
 
         me.getPower();  // update power, so they won't have gained any while dead
 
@@ -408,7 +408,7 @@ public class FactionsPlayerListener implements Listener {
 
         fullCmd = fullCmd.toLowerCase();
 
-        FPlayer me = FPlayers.i.get(player);
+        FPlayer me = FPlayers.getInstance().getByPlayer(player);
 
         String shortCmd;  // command without the slash at the beginning
         if (fullCmd.startsWith("/")) {
@@ -472,7 +472,7 @@ public class FactionsPlayerListener implements Listener {
             return;
         }
 
-        FPlayer badGuy = FPlayers.i.get(event.getPlayer());
+        FPlayer badGuy = FPlayers.getInstance().getByPlayer(event.getPlayer());
         if (badGuy == null) {
             return;
         }
@@ -484,7 +484,7 @@ public class FactionsPlayerListener implements Listener {
             }
 
             badGuy.leave(false);
-            badGuy.detach();
+            badGuy.remove();
         }
     }
 }
