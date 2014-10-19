@@ -36,7 +36,7 @@ public class CmdOpen extends FCommand {
 
         // Inform
         myFaction.msg("%s<i> changed the faction to <h>%s<i>.", fme.describeTo(myFaction, true), open);
-        for (Faction faction : Factions.i.get()) {
+        for (Faction faction : Factions.getInstance().getAllFactions()) {
             if (faction == myFaction) {
                 continue;
             }

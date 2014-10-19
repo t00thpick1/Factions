@@ -1,38 +1,34 @@
 package com.massivecraft.factions;
 
-import com.massivecraft.factions.zcore.persist.PlayerEntityCollection;
-import org.bukkit.craftbukkit.libs.com.google.gson.reflect.TypeToken;
+import java.util.Collection;
 
-import java.io.File;
-import java.lang.reflect.Type;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
-public class FPlayers extends PlayerEntityCollection<FPlayer> {
+public abstract class FPlayers {
+    private static FPlayers instance = getFPlayersImpl();
 
-    public static FPlayers i = new FPlayers();
+    public abstract void clean();
 
-    P p = P.p;
-
-    private FPlayers() {
-        super(FPlayer.class, new CopyOnWriteArrayList<FPlayer>(), new ConcurrentSkipListMap<String, FPlayer>(String.CASE_INSENSITIVE_ORDER), new File(P.p.getDataFolder(), "players.json"), P.p.gson);
-
-        this.setCreative(true);
+    public static FPlayers getInstance() {
+        return instance;
     }
 
-    @Override
-    public Type getMapType() {
-        return new TypeToken<Map<String, FPlayer>>() {
-        }.getType();
+    private static FPlayers getFPlayersImpl() {
+        return instance;
+        // TODO Auto-generated method stub
+        
     }
 
-    public void clean() {
-        for (FPlayer fplayer : this.get()) {
-            if (!Factions.i.exists(fplayer.getFactionId())) {
-                p.log("Reset faction data (invalid faction) for player " + fplayer.getName());
-                fplayer.resetFactionData(false);
-            }
-        }
-    }
+    public abstract Collection<FPlayer> getOnlinePlayers();
+
+    public abstract FPlayer getByPlayer(Player player);
+
+    public abstract Collection<FPlayer> getAllFPlayers();
+
+    public abstract void forceSave();
+
+    public abstract FPlayer getByOfflinePlayer(OfflinePlayer player);
+
+    public abstract FPlayer getById(String string);
 }

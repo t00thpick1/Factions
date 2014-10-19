@@ -32,13 +32,12 @@ public class CmdTag extends FCommand {
         String tag = this.argAsString(0);
 
         // TODO does not first test cover selfcase?
-        if (Factions.i.isTagTaken(tag) && !MiscUtil.getComparisonString(tag).equals(myFaction.getComparisonTag())) {
+        if (Factions.getInstance().isTagTaken(tag) && !MiscUtil.getComparisonString(tag).equals(myFaction.getComparisonTag())) {
             msg("<b>That tag is already taken");
             return;
         }
 
-        ArrayList<String> errors = new ArrayList<String>();
-        errors.addAll(Factions.validateTag(tag));
+        ArrayList<String> errors = MiscUtil.validateTag(tag);
         if (errors.size() > 0) {
             sendMessage(errors);
             return;
@@ -66,7 +65,7 @@ public class CmdTag extends FCommand {
 
         // Inform
         myFaction.msg("%s<i> changed your faction tag to %s", fme.describeTo(myFaction, true), myFaction.getTag(myFaction));
-        for (Faction faction : Factions.i.get()) {
+        for (Faction faction : Factions.getInstance().getAllFactions()) {
             if (faction == myFaction) {
                 continue;
             }

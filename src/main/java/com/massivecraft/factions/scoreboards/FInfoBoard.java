@@ -30,7 +30,7 @@ public class FInfoBoard extends FScoreboard {
     }
 
     private void setup(Player player) {
-        FPlayer fPlayer = FPlayers.i.get(player);
+        FPlayer fPlayer = FPlayers.getInstance().getByPlayer(player);
         objective = scoreboard.registerNewObjective("FBoard", "dummy");
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         objective.setDisplayName(faction.getRelationTo(fPlayer).getColor() + faction.getTag());
