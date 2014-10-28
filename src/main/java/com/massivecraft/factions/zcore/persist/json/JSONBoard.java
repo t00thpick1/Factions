@@ -1,8 +1,9 @@
-package com.massivecraft.factions.zcore.persist;
+package com.massivecraft.factions.zcore.persist.json;
 
+import com.massivecraft.factions.Board;
 import com.massivecraft.factions.FLocation;
-import com.massivecraft.factions.MemoryBoard;
 import com.massivecraft.factions.P;
+import com.massivecraft.factions.zcore.persist.MemoryBoard;
 import com.massivecraft.factions.zcore.util.DiscUtil;
 
 import org.bukkit.craftbukkit.libs.com.google.gson.reflect.TypeToken;
@@ -88,6 +89,7 @@ public class JSONBoard extends MemoryBoard {
             }.getType();
             Map<String, Map<String, String>> worldCoordIds = P.p.gson.fromJson(DiscUtil.read(file), type);
             loadFromSaveFormat(worldCoordIds);
+            P.p.log("Loaded " + flocationIds.size() + " board locations");
         } catch (Exception e) {
             e.printStackTrace();
             P.p.log("Failed to load the board from disk.");
@@ -95,5 +97,12 @@ public class JSONBoard extends MemoryBoard {
         }
 
         return true;
+    }
+
+    @Override
+    public void convertFrom(MemoryBoard old) {
+        this.flocationIds = old.flocationIds;
+        forceSave();
+        Board.instance = this;
     }
 }

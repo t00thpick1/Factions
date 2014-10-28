@@ -1,8 +1,13 @@
-package com.massivecraft.factions;
+package com.massivecraft.factions.zcore.persist;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+
+import com.massivecraft.factions.FPlayer;
+import com.massivecraft.factions.FPlayers;
+import com.massivecraft.factions.Factions;
+import com.massivecraft.factions.P;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,12 +18,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 public abstract class MemoryFPlayers extends FPlayers {
-    protected Map<String, FPlayer> fPlayers = new ConcurrentSkipListMap<String, FPlayer>(String.CASE_INSENSITIVE_ORDER);
+    public Map<String, FPlayer> fPlayers = new ConcurrentSkipListMap<String, FPlayer>(String.CASE_INSENSITIVE_ORDER);
 
     public void clean() {
         for (FPlayer fplayer : this.fPlayers.values()) {
             if (!Factions.getInstance().isValidFactionId(fplayer.getFactionId())) {
-                P.p.log("Reset faction data (invalid faction) for player " + fplayer.getName());
+                P.p.log("Reset faction data (invalid faction:" + fplayer.getFactionId() + ") for player " + fplayer.getName());
                 fplayer.resetFactionData(false);
             }
         }
@@ -45,6 +50,8 @@ public abstract class MemoryFPlayers extends FPlayers {
     @Override
     public abstract void forceSave();
 
+    public abstract void load();
+
     @Override
     public FPlayer getByOfflinePlayer(OfflinePlayer player) {
         return getById(player.getUniqueId().toString());
@@ -60,4 +67,6 @@ public abstract class MemoryFPlayers extends FPlayers {
     }
 
     public abstract FPlayer generateFPlayer(String id);
+
+    public abstract void convertFrom(MemoryFPlayers old);
 }

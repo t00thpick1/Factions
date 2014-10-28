@@ -3,8 +3,11 @@ package com.massivecraft.factions;
 import java.util.ArrayList;
 import java.util.Set;
 
+import com.massivecraft.factions.zcore.persist.json.JSONFactions;
+import com.massivecraft.factions.zcore.persist.mysql.SQLFactions;
+
 public abstract class Factions {
-    private final static Factions instance = getFactionsImpl();
+    protected static Factions instance = getFactionsImpl();
 
     public abstract Faction getFactionById(String id);
 
@@ -37,7 +40,14 @@ public abstract class Factions {
     }
 
     private static Factions getFactionsImpl() {
-        // TODO Auto-generated method stub
+        switch (Conf.backEnd) {
+            case JSON:
+                return new JSONFactions();
+            case MYSQL:
+                return new SQLFactions();
+        }
         return null;
     }
+
+    public abstract void load();
 }

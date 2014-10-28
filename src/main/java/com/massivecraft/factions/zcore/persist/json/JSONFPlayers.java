@@ -1,9 +1,12 @@
-package com.massivecraft.factions.zcore.persist;
+package com.massivecraft.factions.zcore.persist.json;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Maps;
 import com.massivecraft.factions.FPlayer;
-import com.massivecraft.factions.MemoryFPlayer;
-import com.massivecraft.factions.MemoryFPlayers;
+import com.massivecraft.factions.FPlayers;
 import com.massivecraft.factions.P;
+import com.massivecraft.factions.zcore.persist.MemoryFPlayer;
+import com.massivecraft.factions.zcore.persist.MemoryFPlayers;
 import com.massivecraft.factions.zcore.util.DiscUtil;
 import com.massivecraft.factions.zcore.util.UUIDFetcher;
 
@@ -15,6 +18,7 @@ import org.bukkit.craftbukkit.libs.com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 
 public class JSONFPlayers extends MemoryFPlayers {
@@ -34,9 +38,18 @@ public class JSONFPlayers extends MemoryFPlayers {
     public JSONFPlayers() {
         file = new File(P.p.getDataFolder(), "players.json");
         gson = P.p.gson;
-        load();
     }
 
+    public void convertFrom(MemoryFPlayers old) {
+        this.fPlayers.putAll(Maps.transformValues(old.fPlayers, new Function<FPlayer, JSONFPlayer>() {
+            @Override
+            public JSONFPlayer apply(FPlayer arg0) {
+                return new JSONFPlayer((MemoryFPlayer) arg0);
+            }
+        }));
+        forceSave();
+        FPlayers.instance = this;
+    }
 
     public void forceSave() {
         Map<String, JSONFPlayer> entitiesThatShouldBeSaved = new HashMap<String, JSONFPlayer>();
@@ -45,7 +58,6 @@ public class JSONFPlayers extends MemoryFPlayers {
                 entitiesThatShouldBeSaved.put(entity.getId(), (JSONFPlayer) entity);
             }
         }
-
         this.saveCore(this.file, entitiesThatShouldBeSaved);
     }
 
@@ -54,12 +66,13 @@ public class JSONFPlayers extends MemoryFPlayers {
     }
 
     public void load() {
-        Map<String, JSONFPlayer> factions = this.loadCore();
-        if (factions == null) {
+        Map<String, JSONFPlayer> fplayers = this.loadCore();
+        if (fplayers == null) {
             return;
         }
         this.fPlayers.clear();
-        this.fPlayers.putAll(factions);
+        this.fPlayers.putAll(fplayers);
+        P.p.log("Loaded " + fPlayers.size() + " players");
     }
 
     private Map<String, JSONFPlayer> loadCore() {
@@ -73,9 +86,19 @@ public class JSONFPlayers extends MemoryFPlayers {
         }
 
         Map<String, JSONFPlayer> data = this.gson.fromJson(content, new TypeToken<Map<String, JSONFPlayer>>(){}.getType());
-        Set<String> list = whichKeysNeedMigration(data.keySet());
-        Set<String> invalidList = whichKeysAreInvalid(list);
-        list.removeAll(invalidList);
+        Set<String> list = new HashSet<String>();
+        Set<String> invalidList = new HashSet<String>();
+        for (Entry<String, JSONFPlayer> entry : data.entrySet()) {
+            String key = entry.getKey();
+            entry.getValue().setId(key);
+            if (doesKeyNeedMigration(key)) {
+                if (!isKeyInvalid(key)) {
+                    list.add(key);
+                } else {
+                    invalidList.add(key);
+                }
+            }
+        }
 
         if (list.size() > 0) {
             // We've got some converting to do!
@@ -140,36 +163,25 @@ public class JSONFPlayers extends MemoryFPlayers {
         return (Map<String, JSONFPlayer>) data;
     }
 
-    private Set<String> whichKeysNeedMigration(Set<String> keys) {
-        HashSet<String> list = new HashSet<String>();
-        for (String value : keys) {
-            if (!value.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-                // Not a valid UUID..
-                if (value.matches("[a-zA-Z0-9_]{2,16}")) {
-                    // Valid playername, we'll mark this as one for conversion
-                    // to UUID
-                    list.add(value);
-                }
+    private boolean doesKeyNeedMigration(String key) {
+        if (!key.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+            // Not a valid UUID..
+            if (key.matches("[a-zA-Z0-9_]{2,16}")) {
+                // Valid playername, we'll mark this as one for conversion
+                // to UUID
+                return true;
             }
         }
-        return list;
+        return false;
     }
 
-    private Set<String> whichKeysAreInvalid(Set<String> keys) {
-        Set<String> list = new HashSet<String>();
-        for (String value : keys) {
-            if (!value.matches("[a-zA-Z0-9_]{2,16}")) {
-                // Not a valid player name.. go ahead and mark it for removal
-                list.add(value);
-            }
-        }
-        return list;
+    private boolean isKeyInvalid(String key) {
+        return !key.matches("[a-zA-Z0-9_]{2,16}");
     }
 
     @Override
     public FPlayer generateFPlayer(String id) {
-        FPlayer player = new JSONFPlayer();
-        player.setId(id);
+        FPlayer player = new JSONFPlayer(id);
         return player;
     }
 }

@@ -1,5 +1,13 @@
-package com.massivecraft.factions;
+package com.massivecraft.factions.zcore.persist;
 
+import com.massivecraft.factions.Board;
+import com.massivecraft.factions.Conf;
+import com.massivecraft.factions.FLocation;
+import com.massivecraft.factions.FPlayer;
+import com.massivecraft.factions.FPlayers;
+import com.massivecraft.factions.Faction;
+import com.massivecraft.factions.Factions;
+import com.massivecraft.factions.P;
 import com.massivecraft.factions.event.FPlayerLeaveEvent;
 import com.massivecraft.factions.event.LandClaimEvent;
 import com.massivecraft.factions.iface.EconomyParticipator;
@@ -37,11 +45,54 @@ import java.util.UUID;
  */
 
 public abstract class MemoryFPlayer implements FPlayer {
-    //private transient String playerName;
-    private transient FLocation lastStoodAt = new FLocation(); // Where did this player stand the last time we checked?
-
     // FIELD: factionId
-    private String factionId;
+    protected String factionId;
+
+    // FIELD: role
+    protected Role role;
+    // FIELD: title
+    protected String title;
+
+    // FIELD: power
+    protected double power;
+
+    // FIELD: powerBoost
+    // special increase/decrease to min and max power for this player
+    protected double powerBoost;
+
+    // FIELD: lastPowerUpdateTime
+    protected long lastPowerUpdateTime;
+
+    // FIELD: lastLoginTime
+    protected long lastLoginTime;
+
+    // FIELD: chatMode
+    protected ChatMode chatMode;
+
+    protected String id;
+
+    //private transient String playerName;
+    protected transient FLocation lastStoodAt = new FLocation(); // Where did this player stand the last time we checked?
+
+    // FIELD: mapAutoUpdating
+    protected transient boolean mapAutoUpdating;
+
+    // FIELD: autoClaimEnabled
+    protected transient Faction autoClaimFor;
+
+    // FIELD: autoSafeZoneEnabled
+    protected transient boolean autoSafeZoneEnabled;
+
+    // FIELD: autoWarZoneEnabled
+    protected transient boolean autoWarZoneEnabled;
+    
+    protected transient boolean isAdminBypassing = false;
+
+    // FIELD: loginPvpDisabled
+    protected transient boolean loginPvpDisabled;
+
+    // FIELD: chatSpy
+    protected transient boolean spyingChat = false;
 
     public Faction getFaction() {
         if (this.factionId == null) {
@@ -67,9 +118,6 @@ public abstract class MemoryFPlayer implements FPlayer {
         this.factionId = faction.getId();
     }
 
-    // FIELD: role
-    private Role role;
-
     public Role getRole() {
         return this.role;
     }
@@ -78,16 +126,6 @@ public abstract class MemoryFPlayer implements FPlayer {
         this.role = role;
     }
 
-    // FIELD: title
-    private String title;
-
-    // FIELD: power
-    private double power;
-
-    // FIELD: powerBoost
-    // special increase/decrease to min and max power for this player
-    private double powerBoost;
-
     public double getPowerBoost() {
         return this.powerBoost;
     }
@@ -95,18 +133,6 @@ public abstract class MemoryFPlayer implements FPlayer {
     public void setPowerBoost(double powerBoost) {
         this.powerBoost = powerBoost;
     }
-
-    // FIELD: lastPowerUpdateTime
-    private long lastPowerUpdateTime;
-
-    // FIELD: lastLoginTime
-    private long lastLoginTime;
-
-    // FIELD: mapAutoUpdating
-    private transient boolean mapAutoUpdating;
-
-    // FIELD: autoClaimEnabled
-    private transient Faction autoClaimFor;
 
     public Faction getAutoClaimFor() {
         return autoClaimFor;
@@ -121,9 +147,6 @@ public abstract class MemoryFPlayer implements FPlayer {
         }
     }
 
-    // FIELD: autoSafeZoneEnabled
-    private transient boolean autoSafeZoneEnabled;
-
     public boolean isAutoSafeClaimEnabled() {
         return autoSafeZoneEnabled;
     }
@@ -135,9 +158,6 @@ public abstract class MemoryFPlayer implements FPlayer {
             this.autoWarZoneEnabled = false;
         }
     }
-
-    // FIELD: autoWarZoneEnabled
-    private transient boolean autoWarZoneEnabled;
 
     public boolean isAutoWarClaimEnabled() {
         return autoWarZoneEnabled;
@@ -151,8 +171,6 @@ public abstract class MemoryFPlayer implements FPlayer {
         }
     }
 
-    private transient boolean isAdminBypassing = false;
-
     public boolean isAdminBypassing() {
         return this.isAdminBypassing;
     }
@@ -160,15 +178,6 @@ public abstract class MemoryFPlayer implements FPlayer {
     public void setIsAdminBypassing(boolean val) {
         this.isAdminBypassing = val;
     }
-
-    // FIELD: loginPvpDisabled
-    private transient boolean loginPvpDisabled;
-
-    // FIELD: deleteMe
-    private transient boolean deleteMe;
-
-    // FIELD: chatMode
-    private ChatMode chatMode;
 
     public void setChatMode(ChatMode chatMode) {
         this.chatMode = chatMode;
@@ -180,11 +189,6 @@ public abstract class MemoryFPlayer implements FPlayer {
         }
         return chatMode;
     }
-
-    // FIELD: chatSpy
-    private transient boolean spyingChat = false;
-
-    private String id;
 
     public void setSpyingChat(boolean chatSpying) {
         this.spyingChat = chatSpying;
@@ -199,12 +203,10 @@ public abstract class MemoryFPlayer implements FPlayer {
         return this.getId();
     }
 
-    // -------------------------------------------- //
-    // Construct
-    // -------------------------------------------- //
+    public MemoryFPlayer() { }
 
-    // GSON need this noarg constructor.
-    public MemoryFPlayer() {
+    public MemoryFPlayer(String id) {
+        this.id = id;
         this.resetFactionData(false);
         this.power = Conf.powerPlayerStarting;
         this.lastPowerUpdateTime = System.currentTimeMillis();
@@ -214,7 +216,6 @@ public abstract class MemoryFPlayer implements FPlayer {
         this.autoSafeZoneEnabled = false;
         this.autoWarZoneEnabled = false;
         this.loginPvpDisabled = Conf.noPVPDamageToOthersForXSecondsAfterLogin > 0;
-        this.deleteMe = false;
         this.powerBoost = 0.0;
 
         if (!Conf.newPlayerStartingFactionID.equals("0") && Factions.getInstance().isValidFactionId(Conf.newPlayerStartingFactionID)) {
@@ -222,9 +223,28 @@ public abstract class MemoryFPlayer implements FPlayer {
         }
     }
 
-    public final void resetFactionData(boolean doSpoutUpdate) {
+    public MemoryFPlayer(MemoryFPlayer other) {
+        this.factionId = other.factionId;
+        this.id = other.id;
+        this.power = other.power;
+        this.lastLoginTime = other.lastLoginTime;
+        this.mapAutoUpdating = other.mapAutoUpdating;
+        this.autoClaimFor = other.autoClaimFor;
+        this.autoSafeZoneEnabled = other.autoSafeZoneEnabled;
+        this.autoWarZoneEnabled = other.autoWarZoneEnabled;
+        this.loginPvpDisabled = other.loginPvpDisabled;
+        this.powerBoost = other.powerBoost;
+        this.role = other.role;
+        this.title = other.title;
+        this.chatMode = other.chatMode;
+        this.spyingChat = other.spyingChat;
+        this.lastStoodAt = other.lastStoodAt;
+        this.isAdminBypassing = other.isAdminBypassing;
+    }
+
+    public void resetFactionData(boolean doSpoutUpdate) {
         // clean up any territory ownership in old faction, if there is one
-        if (Factions.getInstance().isValidFactionId(this.getFactionId())) {
+        if (factionId != null && Factions.getInstance().isValidFactionId(this.getFactionId())) {
             Faction currentFaction = this.getFaction();
             currentFaction.removeFPlayer(this);
             if (currentFaction.isNormal()) {
@@ -287,10 +307,6 @@ public abstract class MemoryFPlayer implements FPlayer {
 
     public void setLastStoodAt(FLocation flocation) {
         this.lastStoodAt = flocation;
-    }
-
-    public void markForDeletion(boolean delete) {
-        deleteMe = delete;
     }
 
     //----------------------------------------------//
@@ -601,7 +617,7 @@ public abstract class MemoryFPlayer implements FPlayer {
                 fplayer.msg("<i>%s<i> was disbanded.", myFaction.describeTo(fplayer, true));
             }
 
-            myFaction.remove();
+            Factions.getInstance().removeFaction(myFaction.getId());
             if (Conf.logFactionDisband) {
                 P.p.log("The faction " + myFaction.getTag() + " (" + myFaction.getId() + ") was disbanded due to the last player (" + this.getName() + ") leaving.");
             }
@@ -741,7 +757,7 @@ public abstract class MemoryFPlayer implements FPlayer {
         if (!this.hasFaction() && (this.getPowerRounded() == this.getPowerMaxRounded() || this.getPowerRounded() == (int) Math.round(Conf.powerPlayerStarting))) {
             return false;
         }
-        return !this.deleteMe;
+        return true;
     }
 
     public void msg(String str, Object... args) {

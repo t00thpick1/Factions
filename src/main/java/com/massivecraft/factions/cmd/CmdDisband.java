@@ -92,6 +92,6 @@ public class CmdDisband extends FCommand {
             }
         }
 
-        faction.remove();
+        Factions.getInstance().removeFaction(faction.getId());
     }
 }

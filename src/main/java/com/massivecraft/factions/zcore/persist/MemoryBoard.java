@@ -1,14 +1,22 @@
-package com.massivecraft.factions;
+package com.massivecraft.factions.zcore.persist;
 
+import com.massivecraft.factions.Board;
+import com.massivecraft.factions.Conf;
+import com.massivecraft.factions.FLocation;
+import com.massivecraft.factions.Faction;
+import com.massivecraft.factions.Factions;
+import com.massivecraft.factions.P;
 import com.massivecraft.factions.struct.Relation;
 import com.massivecraft.factions.util.AsciiCompass;
+
 import org.bukkit.ChatColor;
+
 import java.util.*;
 import java.util.Map.Entry;
 
 
 public abstract class MemoryBoard extends Board {
-    protected transient HashMap<FLocation, String> flocationIds = new HashMap<FLocation, String>();
+    public HashMap<FLocation, String> flocationIds = new HashMap<FLocation, String>();
 
     //----------------------------------------------//
     // Get and Set
@@ -57,7 +65,10 @@ public abstract class MemoryBoard extends Board {
         if (faction != null && faction.isNormal()) {
             faction.clearAllClaimOwnership();
         }
+        clean(factionId);
+    }
 
+    public void clean(String factionId) {
         Iterator<Entry<FLocation, String>> iter = flocationIds.entrySet().iterator();
         while (iter.hasNext()) {
             Entry<FLocation, String> entry = iter.next();
@@ -183,7 +194,7 @@ public abstract class MemoryBoard extends Board {
                                        (Conf.showNeutralFactionsOnMap && relation.equals(Relation.NEUTRAL)) ||
                                        (Conf.showEnemyFactionsOnMap && relation.equals(Relation.ENEMY))) {
                         if (!fList.containsKey(factionHere.getTag())) {
-                            fList.put(factionHere.getTag(), Conf.mapKeyChrs[chrIdx++]);
+                            fList.put(factionHere.getTag(), Conf.mapKeyChrs[Math.min(chrIdx++, Conf.mapKeyChrs.length - 1)]);
                         }
                         char tag = fList.get(factionHere.getTag());
                         row += factionHere.getColorTo(faction) + "" + tag;
@@ -214,4 +225,6 @@ public abstract class MemoryBoard extends Board {
 
         return ret;
     }
+
+    public abstract void convertFrom(MemoryBoard old);
 }

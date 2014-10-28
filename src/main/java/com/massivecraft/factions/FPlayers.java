@@ -5,8 +5,11 @@ import java.util.Collection;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
+import com.massivecraft.factions.zcore.persist.json.JSONFPlayers;
+import com.massivecraft.factions.zcore.persist.mysql.SQLFPlayers;
+
 public abstract class FPlayers {
-    private static FPlayers instance = getFPlayersImpl();
+    protected static FPlayers instance = getFPlayersImpl();
 
     public abstract void clean();
 
@@ -15,9 +18,13 @@ public abstract class FPlayers {
     }
 
     private static FPlayers getFPlayersImpl() {
-        return instance;
-        // TODO Auto-generated method stub
-        
+        switch (Conf.backEnd) {
+            case JSON:
+                return new JSONFPlayers();
+            case MYSQL:
+                return new SQLFPlayers();
+        }
+        return null;
     }
 
     public abstract Collection<FPlayer> getOnlinePlayers();
@@ -31,4 +38,6 @@ public abstract class FPlayers {
     public abstract FPlayer getByOfflinePlayer(OfflinePlayer player);
 
     public abstract FPlayer getById(String string);
+
+    public abstract void load();
 }

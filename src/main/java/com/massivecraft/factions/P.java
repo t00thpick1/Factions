@@ -13,6 +13,7 @@ import com.massivecraft.factions.util.MapFLocToStringSetTypeAdapter;
 import com.massivecraft.factions.util.MyLocationTypeAdapter;
 import com.massivecraft.factions.zcore.MPlugin;
 import com.massivecraft.factions.zcore.util.TextUtil;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.libs.com.google.gson.GsonBuilder;
@@ -89,9 +90,18 @@ public class P extends MPlugin {
         // Load Conf from disk
         Conf.load();
         Essentials.setup();
-        Factions.getInstance();
-        FPlayers.getInstance();
-        Board.getInstance();
+        FPlayers.getInstance().load();
+        Factions.getInstance().load();
+        for (FPlayer fPlayer : FPlayers.getInstance().getAllFPlayers()) {
+            Faction faction = Factions.getInstance().getFactionById(fPlayer.getFactionId());
+            if (faction == null) {
+                log("Invalid faction id on " + fPlayer.getName() + ":" + fPlayer.getFactionId());
+                fPlayer.resetFactionData(false);
+                continue;
+            }
+            faction.addFPlayer(fPlayer);
+        }
+        Board.getInstance().load();
 
         // Add Base Commands
         this.cmdBase = new FCmdRoot();

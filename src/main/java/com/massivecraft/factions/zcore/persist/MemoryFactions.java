@@ -1,4 +1,4 @@
-package com.massivecraft.factions;
+package com.massivecraft.factions.zcore.persist;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -8,12 +8,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.ChatColor;
 
+import com.massivecraft.factions.Faction;
+import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.util.MiscUtil;
 import com.massivecraft.factions.zcore.util.TL;
 
 public abstract class MemoryFactions extends Factions {
-    protected final Map<String, Faction> factions = new ConcurrentHashMap<String, Faction>();
-    protected int nextId = 1;
+    public Map<String, Faction> factions = new ConcurrentHashMap<String, Faction>();
+    public int nextId = 1;
 
     public abstract void load(); {
         // Make sure the default neutral faction exists
@@ -70,11 +72,6 @@ public abstract class MemoryFactions extends Factions {
             if (faction.getTag().contains(" ")) {
                 faction.setTag(TL.WARZONE.toString());
             }
-        }
-
-        // populate all faction player lists
-        for (Faction faction : factions.values()) {
-            faction.refreshFPlayers();
         }
     }
 
@@ -147,7 +144,7 @@ public abstract class MemoryFactions extends Factions {
     public abstract Faction generateFactionObject();
 
     public void removeFaction(String id) {
-        factions.get(id).remove();
+        factions.remove(id).remove();
     }
 
     @Override
@@ -169,4 +166,6 @@ public abstract class MemoryFactions extends Factions {
     public Faction getWarZone() {
         return factions.get("-2");
     }
+
+    public abstract void convertFrom(MemoryFactions old);
 }

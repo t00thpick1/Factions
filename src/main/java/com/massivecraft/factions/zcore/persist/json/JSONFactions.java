@@ -1,8 +1,13 @@
-package com.massivecraft.factions.zcore.persist;
+package com.massivecraft.factions.zcore.persist.json;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Maps;
 import com.massivecraft.factions.FLocation;
 import com.massivecraft.factions.Faction;
-import com.massivecraft.factions.MemoryFactions;
+import com.massivecraft.factions.Factions;
+import com.massivecraft.factions.P;
+import com.massivecraft.factions.zcore.persist.MemoryFaction;
+import com.massivecraft.factions.zcore.persist.MemoryFactions;
 import com.massivecraft.factions.zcore.util.DiscUtil;
 import com.massivecraft.factions.zcore.util.UUIDFetcher;
 
@@ -42,9 +47,9 @@ public class JSONFactions extends MemoryFactions {
     // CONSTRUCTORS
     // -------------------------------------------- //
 
-    public JSONFactions(File file, Gson gson) {
-        this.file = file;
-        this.gson = gson;
+    public JSONFactions() {
+        this.file = new File(P.p.getDataFolder(), "factions.json");
+        this.gson = P.p.gson;
         this.nextId = 1;
     }
 
@@ -68,7 +73,7 @@ public class JSONFactions extends MemoryFactions {
         }
         this.factions.clear();
         this.factions.putAll(factions);
-        this.fillIds();
+        P.p.log("Loaded " + factions.size() + " Factions");
     }
 
     private Map<String, JSONFaction> loadCore() {
@@ -83,11 +88,15 @@ public class JSONFactions extends MemoryFactions {
 
         Map<String, JSONFaction> data = this.gson.fromJson(content, new TypeToken<Map<String, JSONFaction>>(){}.getType());
 
+        this.nextId = 1;
         // Do we have any names that need updating in claims or invites?
 
         int needsUpdate = 0;
-        for (String string : data.keySet()) {
-            Faction f = data.get(string);
+        for (Entry<String, JSONFaction> entry : data.entrySet()) {
+            String id = entry.getKey();
+            Faction f = entry.getValue();
+            f.setId(id);
+            this.updateNextIdForId(id);
             needsUpdate += whichKeysNeedMigration(f.getInvites()).size();
             Map<FLocation, Set<String>> claims = f.getClaimOwnership();
             for (FLocation key : f.getClaimOwnership().keySet()) {
@@ -207,16 +216,6 @@ public class JSONFactions extends MemoryFactions {
         return this.isIdFree(Integer.toString(id));
     }
 
-    protected synchronized void fillIds() {
-        this.nextId = 1;
-        for (Entry<String, Faction> entry : this.factions.entrySet()) {
-            String id = entry.getKey();
-            Faction entity = entry.getValue();
-            entity.setId(id);
-            this.updateNextIdForId(id);
-        }
-    }
-
     protected synchronized void updateNextIdForId(int id) {
         if (this.nextId < id) {
             this.nextId = id + 1;
@@ -234,16 +233,27 @@ public class JSONFactions extends MemoryFactions {
     @Override
     public Faction generateFactionObject() {
         String id = getNextId();
-        Faction faction = new JSONFaction();
-        faction.setId(id);
+        Faction faction = new JSONFaction(id);
         updateNextIdForId(id);
         return faction;
     }
 
     @Override
     public Faction generateFactionObject(String id) {
-        Faction faction = new JSONFaction();
-        faction.setId(id);
+        Faction faction = new JSONFaction(id);
         return faction;
+    }
+
+    @Override
+    public void convertFrom(MemoryFactions old) {
+        this.factions.putAll(Maps.transformValues(old.factions, new Function<Faction, JSONFaction>() {
+            @Override
+            public JSONFaction apply(Faction arg0) {
+                return new JSONFaction((MemoryFaction) arg0);
+            }
+        }));
+        this.nextId = old.nextId;
+        forceSave();
+        Factions.instance = this;
     }
 }

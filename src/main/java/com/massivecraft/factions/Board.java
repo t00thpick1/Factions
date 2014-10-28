@@ -2,16 +2,24 @@ package com.massivecraft.factions;
 
 import java.util.*;
 
+import com.massivecraft.factions.zcore.persist.json.JSONBoard;
+import com.massivecraft.factions.zcore.persist.mysql.SQLBoard;
+
 
 public abstract class Board {
-    private static Board instance = getBoardImpl();
+    protected static Board instance = getBoardImpl();
     //----------------------------------------------//
     // Get and Set
     //----------------------------------------------//
     public abstract String getIdAt(FLocation flocation);
 
     private static Board getBoardImpl() {
-        // TODO Auto-generated method stub
+        switch (Conf.backEnd) {
+            case JSON:
+                return new JSONBoard();
+            case MYSQL:
+                return new SQLBoard();
+        }
         return null;
     }
 

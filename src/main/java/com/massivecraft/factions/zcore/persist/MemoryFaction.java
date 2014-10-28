@@ -1,5 +1,13 @@
-package com.massivecraft.factions;
+package com.massivecraft.factions.zcore.persist;
 
+import com.massivecraft.factions.Board;
+import com.massivecraft.factions.Conf;
+import com.massivecraft.factions.FLocation;
+import com.massivecraft.factions.FPlayer;
+import com.massivecraft.factions.FPlayers;
+import com.massivecraft.factions.Faction;
+import com.massivecraft.factions.Factions;
+import com.massivecraft.factions.P;
 import com.massivecraft.factions.iface.EconomyParticipator;
 import com.massivecraft.factions.iface.RelationParticipator;
 import com.massivecraft.factions.integration.Econ;
@@ -9,6 +17,7 @@ import com.massivecraft.factions.struct.Role;
 import com.massivecraft.factions.util.LazyLocation;
 import com.massivecraft.factions.util.MiscUtil;
 import com.massivecraft.factions.util.RelationUtil;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -20,23 +29,22 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class MemoryFaction implements Faction, EconomyParticipator {
-    private String id = null;
-    private boolean peacefulExplosionsEnabled;
-
-    private boolean permanent;
-    private String tag;
-    private String description;
-    private boolean open;
-    private boolean peaceful;
-    private Integer permanentPower;
-    private LazyLocation home;
-    private transient long lastPlayerLoggedOffTime;
-    public double money;
-    private double powerBoost;
-    private Map<String, Relation> relationWish;
-    private Map<FLocation, Set<String>> claimOwnership = new ConcurrentHashMap<FLocation, Set<String>>();
-    private transient Set<FPlayer> fplayers = new HashSet<FPlayer>();
-    private Set<String> invites;
+    protected String id = null;
+    protected boolean peacefulExplosionsEnabled;
+    protected boolean permanent;
+    protected String tag;
+    protected String description;
+    protected boolean open;
+    protected boolean peaceful;
+    protected Integer permanentPower;
+    protected LazyLocation home;
+    protected transient long lastPlayerLoggedOffTime;
+    protected double money;
+    protected double powerBoost;
+    protected Map<String, Relation> relationWish;
+    protected Map<FLocation, Set<String>> claimOwnership = new ConcurrentHashMap<FLocation, Set<String>>();
+    protected transient Set<FPlayer> fplayers = new HashSet<FPlayer>();
+    protected Set<String> invites;
 
     public Set<String> getInvites() {
         return invites;
@@ -195,8 +203,10 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
     // -------------------------------------------- //
     // Construct
     // -------------------------------------------- //
+    public MemoryFaction() { }
 
-    public MemoryFaction() {
+    public MemoryFaction(String id) {
+        this.id = id;
         this.relationWish = new HashMap<String, Relation>();
         this.invites = new HashSet<String>();
         this.open = Conf.newFactionsDefaultOpen;
@@ -210,10 +220,28 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         this.powerBoost = 0.0;
     }
 
+    public MemoryFaction(MemoryFaction old) {
+        id = old.id;
+        peacefulExplosionsEnabled = old.peacefulExplosionsEnabled;
+        permanent = old.permanent;
+        tag = old.tag;
+        description = old.description;
+        open = old.open;
+        peaceful = old.peaceful;
+        permanentPower = old.permanentPower;
+        home = old.home;
+        lastPlayerLoggedOffTime = old.lastPlayerLoggedOffTime;
+        money = old.money;
+        powerBoost = old.powerBoost;
+        relationWish = old.relationWish;
+        claimOwnership = old.claimOwnership;
+        fplayers = new HashSet<FPlayer>();
+        invites = old.invites;
+    }
+
     // -------------------------------------------- //
     // Extra Getters And Setters
     // -------------------------------------------- //
-
     public boolean noPvPInTerritory() {
         return isSafeZone() || (peaceful && Conf.peacefulTerritoryDisablePVP);
     }
@@ -355,7 +383,7 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         }
 
         for (FPlayer fplayer : FPlayers.getInstance().getAllFPlayers()) {
-            if (fplayer.getFaction() == this) {
+            if (fplayer.getFactionId().equalsIgnoreCase(id)) {
                 fplayers.add(fplayer);
             }
         }
@@ -665,9 +693,10 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         }
 
         // Clean the board
-        Board.getInstance().clean();
+        ((MemoryBoard) Board.getInstance()).clean(id);
 
-        // Clean the fplayers
-        FPlayers.getInstance().clean();
+        for (FPlayer fPlayer : fplayers) {
+            fPlayer.resetFactionData(false);
+        }
     }
 }
